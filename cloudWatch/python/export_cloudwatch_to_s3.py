@@ -30,10 +30,9 @@ import argparse
 def query_table(table_name,stream,region):
     dynamodb = boto3.client('dynamodb', region_name=region)
     try:
-        print(stream)
-        print(type(stream))
+
         response = dynamodb.query(TableName=table_name, KeyConditionExpression="batchid = :X",
-                                  ExpressionAttributeValues={":X": {"S": stream}}, ScanIndexForward=False)
+                                  ExpressionAttributeValues={":X": {"S": stream}}, ScanIndexForward=True)
         if response['Count'] > 0:
             max_timestamp = response['Items'][response['Count']-1]['epoch_timestamp']['N']
         else:
@@ -78,7 +77,6 @@ def main(arguments):
     start_time = time.time()
 
     print("Timestamp returned by dyanmdb : " + str(last_epoch_timestamp) + ' - ' + str(datetime.datetime.fromtimestamp(last_epoch_timestamp).strftime('%m/%d/%Y %H:%M:%S')))
-    #print("Current UTC timestamp : " + str(int(time.mktime(time.strptime(datetime.datetime.utcnow().strftime('%Y-%m-%d %H.%M.%S'), '%Y-%m-%d %H.%M.%S')))) + ' - ' + str(datetime.datetime.utcnow().strftime('%m/%d/%Y %H:%M:%S')))
     print("Current local timestamp : " + str(int(time.time())) + ' - ' + str(time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(time.time())))))
 
 
