@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+Parameters:
+  EnvName:
+    Type: String
+    Default: __ENV_NAME__
+    Description: Environment Name
+  ## Parameters for kinesis Firehouse
+  s3Bucket:
+    Type: String
+    Default: __KINESIS_FIREHOSE_S3_BUCKET__
+    Description: S3 bucket destination for kinesis firehose
+  s3Prefix:
+    Type: String
+    Default: __KINESIS_FIREHOSE_S3_PREFIX__
+    Description: S3 prefix. Use / at the end.
+  kinesisRole:
+    Type: String
+    Default: __KINESIS_FIREHOSE_ROLE__
+    Description: Kinesis Role
+  compressionFormat:
+    Type: String
+    Default: __KINESIS_FIREHOSE_COMPRESSION_FORMAT__
+    Description: compression format
+  kinesisBufferIntervalSeconds:
+    Type: String
+    Default: __KINESIS_FIREHOSE_BUFFER_INTERVAL_SECONDS__
+    Description: Buffer interval seconds
+  kinesisBufferSizeMB:
+    Type: String
+    Default: __KINESIS_FIREHOSE_BUFFER_SIZEMB__
+    Description: Buffer size in MB
+  ## Parameters for CloudWatch Lambda and CloudWatch Event rule
+  lambdaRoleArn:
+    Default: role
+    Description: Lambda Role
+    Type: String
+  cloudwatchlogRoleArn:
+    Default: role
+    Description: The ARN of an IAM role that grants CloudWatch Logs permissions to deliver ingested log events to the destination stream.
+    Type: String
+  lambdaS3Bucket:
+    Default: s3LambdaBucket
+    Description: S3 bucket location for lambda code
+    Type: String
+  filterNamePrefix:
+    Default: kinesis
+    Description: Filter prefix name for cloudwatch subscription
+    Type: String
+Resources:
+  KinesisFirehose:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      ExtendedS3DestinationConfiguration: 
+        BucketARN: !Ref s3Bucket
+        BufferingHints:
+          IntervalInSeconds: !Ref kinesisBufferIntervalSeconds
+          SizeInMBs: !Ref kinesisBufferSizeMB
+        CompressionFormat: !Ref compressionFormat
+        Prefix: !Ref s3Prefix
+        RoleARN: !Ref kinesisRole
+  Function:
+    Type: 'AWS::Serverless::Function'
+    DependsOn: KinesisFirehose
+    Properties:
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.6
+      CodeUri:
+         Bucket: !Ref lambdaS3Bucket
+         Key: lambda/enablesubscribe_v1.zip
+      Description: ''
+      MemorySize: 128
+      Timeout: 300
+      Role: !Ref lambdaRoleArn
+      Events:
+        Event:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              detail-type:
+                - AWS API Call via CloudTrail
+              source:
+                - aws.logs
+              detail:
+                eventSource:
+                  - logs.amazonaws.com
+                eventName:
+                  - CreateLogGroup
+      Environment:
+        Variables:
+          destinationArn: !GetAtt KinesisFirehose.Arn
+          roleArn: !Ref cloudwatchlogRoleArn
+          filterNamePrefix: !Ref filterNamePrefix
