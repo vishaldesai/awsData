@@ -1,0 +1,107 @@
+
+
+aws cloudformation deploy --stack-name cwlogstdod0  \
+        --template-file cwl_stream.yaml \
+        --capabilities CAPABILITY_NAMED_IAM \
+        --parameter-overrides EnvName=idev \
+        s3Bucket=arn:aws:s3:::xxxx-xxxx  \
+        s3Prefix=xyz/abc/  \
+        kinesisRole=arn:aws:iam::xxxx:role/xxxx  \
+        compressionFormat=GZIP  \
+        kinesisBufferIntervalSeconds=200  \
+        kinesisBufferSizeMB=100  \
+        lambdaRoleArn=arn:aws:iam::xxxxx:role/xxxxx \
+        cloudwatchlogRoleArn=arn:aws:iam::xxxx:role/xxxx  \
+        lambdaS3Bucket=xxxx  \
+        filterNamePrefix=Kinesis
+
+iam permission required:
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "logs:*",
+            "Resource": "*"
+        }
+    ]
+}
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "firehose:*",
+            "Resource": "*"
+        }
+    ]
+}
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "events:*",
+            "Resource": "*"
+        }
+    ]
+}
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::161652525186:role/ana-intelli-cwlogs-to-d0"
+        }
+    ]
+}
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "logs:PutLogEvents"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        },
+        {
+            "Action": [
+                "s3:AbortMultipartUpload",
+                "s3:GetBucketLocation",
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+                "s3:PutObject"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        }
+    ]
+}
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "logs.amazonaws.com",
+          "lambda.amazonaws.com",
+          "firehose.amazonaws.com"
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
